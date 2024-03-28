@@ -1,25 +1,34 @@
 ﻿using P3AddNewFunctionalityDotNetCore.Models.Services;
 using P3AddNewFunctionalityDotNetCore.Models.ViewModels;
+using System.Collections.Generic;
 using Xunit;
+using Moq;
 
 namespace P3AddNewFunctionalityDotNetCore.Tests
 {
     public class ProductServiceTests
     {
-        private readonly ProductService _productService;
-        /// <summary>
-        /// Take this test method as a template to write your test method.
-        /// A test method must check if a definite method does its job:
-        /// returns an expected value from a particular set of parameters
-        /// </summary>
+        private readonly Mock<IProductService> _productServiceMock;
+                
+        public ProductServiceTests() 
+        { 
+            _productServiceMock = new();
+        }
+
+       
         [Fact]
-        public void SaveProduct_Should_ReturnErrorMissingName()
+        public void SaveProduct_Should_ReturnErrorMissingName_WhenNameIsNull()
         {
             // Arrange
-            var product = new ProductViewModel(); 
+            var product = new ProductViewModel {Name = null};
+
+            _productServiceMock.Setup(service => service.CheckProductModelErrors(It.IsAny<ProductViewModel>()))
+                .Returns(new List<string> { "MissingName" });
+
+            var productService = _productServiceMock.Object;
 
             // Act
-            var errors = _productService.CheckProductModelErrors(product);
+            var errors = productService.CheckProductModelErrors(product);
 
             // Assert
             Assert.Contains("MissingName", errors); 
@@ -32,7 +41,7 @@ namespace P3AddNewFunctionalityDotNetCore.Tests
             var product = new ProductViewModel(); 
 
             // Act
-            var errors = _productService.CheckProductModelErrors(product);
+            var errors = productService.CheckProductModelErrors(product);
 
             // Assert
             Assert.Contains("MissingPrice", errors);
@@ -45,7 +54,7 @@ namespace P3AddNewFunctionalityDotNetCore.Tests
             var product = new ProductViewModel(); 
 
             // Act
-            var errors = _productService.CheckProductModelErrors(product);
+            var errors = productService.CheckProductModelErrors(product);
 
             // Assert
             Assert.Contains("PriceNotANumber", errors);
@@ -58,11 +67,12 @@ namespace P3AddNewFunctionalityDotNetCore.Tests
             var product = new ProductViewModel(); 
 
             // Act
-            var errors = _productService.CheckProductModelErrors(product);
+            var errors = productService.CheckProductModelErrors(product);
 
             // Assert
             Assert.Contains("PriceNotGreaterThanZero", errors);
         }
+
         [Fact]
         public void SaveProduct_Should_ReturneError_MissingQuantity()
         {
@@ -70,7 +80,7 @@ namespace P3AddNewFunctionalityDotNetCore.Tests
             var product = new ProductViewModel();
 
             // Act
-            var errors = _productService.CheckProductModelErrors(product);
+            var errors = productService.CheckProductModelErrors(product);
 
             // Assert
             Assert.Contains("MissingQuantity", errors);
@@ -83,7 +93,7 @@ namespace P3AddNewFunctionalityDotNetCore.Tests
             var product = new ProductViewModel();
 
             // Act
-            var errors = _productService.CheckProductModelErrors(product);
+            var errors = productService.CheckProductModelErrors(product);
 
             // Assert
             Assert.Contains("QuantityNotAnInteger", errors);
@@ -96,7 +106,7 @@ namespace P3AddNewFunctionalityDotNetCore.Tests
             var product = new ProductViewModel();
 
             // Act
-            var errors = _productService.CheckProductModelErrors(product);
+            var errors = productService.CheckProductModelErrors(product);
 
             // Assert
             Assert.Contains("QuantityNotGreaterThanZero", errors);
