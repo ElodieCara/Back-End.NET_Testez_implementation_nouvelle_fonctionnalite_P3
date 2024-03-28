@@ -15,7 +15,6 @@ namespace P3AddNewFunctionalityDotNetCore.Tests
             _productServiceMock = new();
         }
 
-       
         [Fact]
         public void SaveProduct_Should_ReturnErrorMissingName_WhenNameIsNull()
         {
@@ -35,10 +34,15 @@ namespace P3AddNewFunctionalityDotNetCore.Tests
         }
 
         [Fact]
-        public void SaveProduct_Should_ReturneError_MissingPrice()
+        public void SaveProduct_Should_ReturneErrorMissingPrice_WhenPriceIsMissing()
         {
             // Arrange
-            var product = new ProductViewModel(); 
+            var product = new ProductViewModel { Price = null };
+
+            _productServiceMock.Setup(service => service.CheckProductModelErrors(It.IsAny<ProductViewModel>()))
+                .Returns(new List<string> { "MissingPrice" });
+
+            var productService = _productServiceMock.Object;
 
             // Act
             var errors = productService.CheckProductModelErrors(product);
@@ -48,10 +52,15 @@ namespace P3AddNewFunctionalityDotNetCore.Tests
         }
 
         [Fact]
-        public void SaveProduct_Should_ReturneError_PriceNotANumber()
+        public void SaveProduct_Should_ReturnErrorPriceNotANumber_WhenPriceIsNotANumber()
         {
             // Arrange
-            var product = new ProductViewModel(); 
+            var product = new ProductViewModel { Price = "not_a_number" };
+
+            _productServiceMock.Setup(service => service.CheckProductModelErrors(It.IsAny<ProductViewModel>()))
+                .Returns(new List<string> { "PriceNotANumber" });
+
+            var productService = _productServiceMock.Object;
 
             // Act
             var errors = productService.CheckProductModelErrors(product);
@@ -61,10 +70,15 @@ namespace P3AddNewFunctionalityDotNetCore.Tests
         }
 
         [Fact]
-        public void SaveProduct_Should_ReturneError_PriceNotGreaterThanZero()
+        public void SaveProduct_Should_ReturnErrorPriceNotGreaterThanZero_WhenPriceIsZero()
         {
             // Arrange
-            var product = new ProductViewModel(); 
+            var product = new ProductViewModel { Price = "0" };
+
+            _productServiceMock.Setup(service => service.CheckProductModelErrors(It.IsAny<ProductViewModel>()))
+                .Returns(new List<string> { "PriceNotGreaterThanZero" });
+
+            var productService = _productServiceMock.Object;
 
             // Act
             var errors = productService.CheckProductModelErrors(product);
@@ -74,10 +88,15 @@ namespace P3AddNewFunctionalityDotNetCore.Tests
         }
 
         [Fact]
-        public void SaveProduct_Should_ReturneError_MissingQuantity()
+        public void SaveProduct_Should_ReturneErrorMissingQuantity_WhenQuantityIsNull()
         {
             // Arrange
             var product = new ProductViewModel();
+
+            _productServiceMock.Setup(service => service.CheckProductModelErrors(It.IsAny<ProductViewModel>()))
+                .Returns(new List<string> { "MissingQuantity" });
+
+            var productService = _productServiceMock.Object;
 
             // Act
             var errors = productService.CheckProductModelErrors(product);
@@ -87,10 +106,15 @@ namespace P3AddNewFunctionalityDotNetCore.Tests
         }
 
         [Fact]
-        public void SaveProduct_Should_ReturneError_QuantityNotAnInteger()
+        public void SaveProduct_Should_ReturnErrorQuantityNotAnInteger_WhenQuantityIsNotAnInteger()
         {
             // Arrange
             var product = new ProductViewModel();
+
+            _productServiceMock.Setup(service => service.CheckProductModelErrors(It.IsAny<ProductViewModel>()))
+                .Returns(new List<string> { "QuantityNotAnInteger" });
+
+            var productService = _productServiceMock.Object;
 
             // Act
             var errors = productService.CheckProductModelErrors(product);
@@ -100,10 +124,15 @@ namespace P3AddNewFunctionalityDotNetCore.Tests
         }
 
         [Fact]
-        public void SaveProduct_Should_ReturneError_QuantityNotGreaterThanZero()
+        public void SaveProduct_Should_ReturnErrorQuantityNotGreaterThanZero_WhenQuantityIsNotGreaterThanZero()
         {
-            /// Arrange
+            // Arrange
             var product = new ProductViewModel();
+
+            _productServiceMock.Setup(service => service.CheckProductModelErrors(It.IsAny<ProductViewModel>()))
+               .Returns(new List<string> { "QuantityNotGreaterThanZero" });
+
+            var productService = _productServiceMock.Object;
 
             // Act
             var errors = productService.CheckProductModelErrors(product);
@@ -111,6 +140,7 @@ namespace P3AddNewFunctionalityDotNetCore.Tests
             // Assert
             Assert.Contains("QuantityNotGreaterThanZero", errors);
         }
+
 
 
 
