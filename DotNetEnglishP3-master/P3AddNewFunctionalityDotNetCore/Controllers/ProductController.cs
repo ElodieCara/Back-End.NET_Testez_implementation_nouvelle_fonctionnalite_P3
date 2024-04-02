@@ -39,7 +39,7 @@ namespace P3AddNewFunctionalityDotNetCore.Controllers
         [Authorize]
         [HttpPost]
         public IActionResult Create(ProductViewModel product)
-        {
+        {            
             if (ModelState.IsValid)
             {
                 _productService.SaveProduct(product);

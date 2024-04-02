@@ -9,6 +9,7 @@ namespace P3AddNewFunctionalityDotNetCore.Models.ViewModels
         [Required(ErrorMessage = "MissingName")]
         public string Name { get; set; }
 
+        [Required(ErrorMessage ="MissingDesc")]
         public string Description { get; set; }
 
         public string Details { get; set; }

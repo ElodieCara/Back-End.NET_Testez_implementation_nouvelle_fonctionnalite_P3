@@ -93,18 +93,18 @@ namespace P3AddNewFunctionalityDotNetCore.Models.Services
 
         public List<string> CheckProductModelErrors(ProductViewModel product)
         {
-            var validationResults = new List<ValidationResult>();
-            var context = new ValidationContext(product, null, null);
-            Validator.TryValidateObject(product, context, validationResults, true);
+           var validationResults = new List<ValidationResult>();
+           var context = new ValidationContext(product, null, null);
+           Validator.TryValidateObject(product, context, validationResults, true);
 
-            // Convertir List<ValidationResult> en List<string>
-            var errorMessages = validationResults.SelectMany(vr => vr.MemberNames.Select(mn => vr.ErrorMessage)).ToList();
+            //Convertir List<ValidationResult> en List<string>
+           var errorMessages = validationResults.SelectMany(vr => vr.MemberNames.Select(mn => vr.ErrorMessage)).ToList();
 
             return errorMessages;
         }
 
 
-        public void SaveProduct(ProductViewModel product)
+    public void SaveProduct(ProductViewModel product)
         {
             var productToAdd = MapToProductEntity(product);
             _productRepository.SaveProduct(productToAdd);

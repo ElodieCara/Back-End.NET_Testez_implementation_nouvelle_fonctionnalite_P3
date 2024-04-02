@@ -1,0 +1,41 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\carad\\source\\repos\\ElodieCara\\Back-End.NET_Testez_implementation_nouvelle_fonctionnalite_P3\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\carad\\source\\repos\\ElodieCara\\Back-End.NET_Testez_implementation_nouvelle_fonctionnalite_P3\\DotNetEnglishP3-master\\P3AddNewFunctionalityDotNetCore\\Controllers\\LanguageController.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:DotNetEnglishP3-master\\P3AddNewFunctionalityDotNetCore\\Controllers\\LanguageController.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 0,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "LanguageController.cs",
+              "DocumentMoniker": "C:\\Users\\carad\\source\\repos\\ElodieCara\\Back-End.NET_Testez_implementation_nouvelle_fonctionnalite_P3\\DotNetEnglishP3-master\\P3AddNewFunctionalityDotNetCore\\Controllers\\LanguageController.cs",
+              "RelativeDocumentMoniker": "DotNetEnglishP3-master\\P3AddNewFunctionalityDotNetCore\\Controllers\\LanguageController.cs",
+              "ToolTip": "C:\\Users\\carad\\source\\repos\\ElodieCara\\Back-End.NET_Testez_implementation_nouvelle_fonctionnalite_P3\\DotNetEnglishP3-master\\P3AddNewFunctionalityDotNetCore\\Controllers\\LanguageController.cs",
+              "RelativeToolTip": "DotNetEnglishP3-master\\P3AddNewFunctionalityDotNetCore\\Controllers\\LanguageController.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAABUAAABPAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-03-22T14:38:03.999Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{269a02dc-6af8-11d3-bdc4-00c04f688e50}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
