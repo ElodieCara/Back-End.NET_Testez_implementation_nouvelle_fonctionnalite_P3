@@ -9,141 +9,67 @@ namespace P3AddNewFunctionalityDotNetCore.Tests
     public class ProductServiceTests
     {
         private readonly Mock<IProductService> _productServiceMock;
-                
-        public ProductServiceTests() 
-        { 
-            _productServiceMock = new();
+
+        public ProductServiceTests()
+        {
+            _productServiceMock = new Mock<IProductService>();
         }
 
-        [Fact]
-        public void SaveProduct_Should_ReturnErrorMissingName_WhenNameIsNull()
+        [Theory]
+        [InlineData(null, "MissingName")]
+        [InlineData("", "MissingName")] 
+        public void SaveProduct_Should_ReturnErrorForInvalidName(string name, string expectedError)
         {
             // Arrange
-            var product = new ProductViewModel {Name = null};
-
+            var product = new ProductViewModel { Name = name };
             _productServiceMock.Setup(service => service.CheckProductModelErrors(It.IsAny<ProductViewModel>()))
-                .Returns(new List<string> { "MissingName" });
-
+                               .Returns(new List<string> { expectedError });
             var productService = _productServiceMock.Object;
 
             // Act
             var errors = productService.CheckProductModelErrors(product);
 
             // Assert
-            Assert.Contains("MissingName", errors); 
+            Assert.Contains(expectedError, errors);
         }
 
-        [Fact]
-        public void SaveProduct_Should_ReturneErrorMissingPrice_WhenPriceIsMissing()
+        [Theory]
+        [InlineData(null, "MissingPrice")]
+        [InlineData("not_a_number", "PriceNotANumber")]
+        [InlineData("0", "PriceNotGreaterThanZero")]
+        public void SaveProduct_Should_ReturnErrorForInvalidPrice(string price, string expectedError)
         {
             // Arrange
-            var product = new ProductViewModel { Price = null };
-
+            var product = new ProductViewModel { Price = price };
             _productServiceMock.Setup(service => service.CheckProductModelErrors(It.IsAny<ProductViewModel>()))
-                .Returns(new List<string> { "MissingPrice" });
-
+                               .Returns(new List<string> { expectedError });
             var productService = _productServiceMock.Object;
 
             // Act
             var errors = productService.CheckProductModelErrors(product);
 
             // Assert
-            Assert.Contains("MissingPrice", errors);
+            Assert.Contains(expectedError, errors);
         }
 
-        [Fact]
-        public void SaveProduct_Should_ReturnErrorPriceNotANumber_WhenPriceIsNotANumber()
+        [Theory]
+        [InlineData(null, "MissingQuantity")]
+        [InlineData("abc", "QuantityNotAnInteger")]
+        [InlineData("0", "QuantityNotGreaterThanZero")]
+        public void SaveProduct_Should_ReturnErrorForInvalidStock(string stock, string expectedError)
         {
             // Arrange
-            var product = new ProductViewModel { Price = "not_a_number" };
-
+            var product = new ProductViewModel { Stock = stock };
             _productServiceMock.Setup(service => service.CheckProductModelErrors(It.IsAny<ProductViewModel>()))
-                .Returns(new List<string> { "PriceNotANumber" });
-
+                               .Returns(new List<string> { expectedError });
             var productService = _productServiceMock.Object;
 
             // Act
             var errors = productService.CheckProductModelErrors(product);
 
             // Assert
-            Assert.Contains("PriceNotANumber", errors);
+            Assert.Contains(expectedError, errors);
         }
-
-        [Fact]
-        public void SaveProduct_Should_ReturnErrorPriceNotGreaterThanZero_WhenPriceIsZero()
-        {
-            // Arrange
-            var product = new ProductViewModel { Price = "0" };
-
-            _productServiceMock.Setup(service => service.CheckProductModelErrors(It.IsAny<ProductViewModel>()))
-                .Returns(new List<string> { "PriceNotGreaterThanZero" });
-
-            var productService = _productServiceMock.Object;
-
-            // Act
-            var errors = productService.CheckProductModelErrors(product);
-
-            // Assert
-            Assert.Contains("PriceNotGreaterThanZero", errors);
-        }
-
-        [Fact]
-        public void SaveProduct_Should_ReturneErrorMissingQuantity_WhenQuantityIsNull()
-        {
-            // Arrange
-            var product = new ProductViewModel { Stock = null };
-
-            _productServiceMock.Setup(service => service.CheckProductModelErrors(It.IsAny<ProductViewModel>()))
-                .Returns(new List<string> { "MissingQuantity" });
-
-            var productService = _productServiceMock.Object;
-
-            // Act
-            var errors = productService.CheckProductModelErrors(product);
-
-            // Assert
-            Assert.Contains("MissingQuantity", errors);
-        }
-
-        [Fact]
-        public void SaveProduct_Should_ReturnErrorQuantityNotAnInteger_WhenQuantityIsNotAnInteger()
-        {
-            // Arrange
-            var product = new ProductViewModel { Stock = "abc" }; 
-
-            _productServiceMock.Setup(service => service.CheckProductModelErrors(It.IsAny<ProductViewModel>()))
-                .Returns(new List<string> { "QuantityNotAnInteger" });
-
-            var productService = _productServiceMock.Object;
-
-            // Act
-            var errors = productService.CheckProductModelErrors(product);
-
-            // Assert
-            Assert.Contains("QuantityNotAnInteger", errors);
-        }
-
-        [Fact]
-        public void SaveProduct_Should_ReturnErrorQuantityNotGreaterThanZero_WhenQuantityIsNotGreaterThanZero()
-        {
-            // Arrange
-            var product = new ProductViewModel { Stock = "0" };
-
-            _productServiceMock.Setup(service => service.CheckProductModelErrors(It.IsAny<ProductViewModel>()))
-               .Returns(new List<string> { "QuantityNotGreaterThanZero" });
-
-            var productService = _productServiceMock.Object;
-
-            // Act
-            var errors = productService.CheckProductModelErrors(product);
-
-            // Assert
-            Assert.Contains("QuantityNotGreaterThanZero", errors);
-        }
-
-
-
-
-        // TODO write test methods to ensure a correct coverage of all possibilities
+        
     }
 }
