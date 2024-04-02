@@ -91,7 +91,7 @@ namespace P3AddNewFunctionalityDotNetCore.Tests
         public void SaveProduct_Should_ReturneErrorMissingQuantity_WhenQuantityIsNull()
         {
             // Arrange
-            var product = new ProductViewModel();
+            var product = new ProductViewModel { Stock = null };
 
             _productServiceMock.Setup(service => service.CheckProductModelErrors(It.IsAny<ProductViewModel>()))
                 .Returns(new List<string> { "MissingQuantity" });
@@ -109,7 +109,7 @@ namespace P3AddNewFunctionalityDotNetCore.Tests
         public void SaveProduct_Should_ReturnErrorQuantityNotAnInteger_WhenQuantityIsNotAnInteger()
         {
             // Arrange
-            var product = new ProductViewModel();
+            var product = new ProductViewModel { Stock = "abc" }; 
 
             _productServiceMock.Setup(service => service.CheckProductModelErrors(It.IsAny<ProductViewModel>()))
                 .Returns(new List<string> { "QuantityNotAnInteger" });
@@ -127,7 +127,7 @@ namespace P3AddNewFunctionalityDotNetCore.Tests
         public void SaveProduct_Should_ReturnErrorQuantityNotGreaterThanZero_WhenQuantityIsNotGreaterThanZero()
         {
             // Arrange
-            var product = new ProductViewModel();
+            var product = new ProductViewModel { Stock = "0" };
 
             _productServiceMock.Setup(service => service.CheckProductModelErrors(It.IsAny<ProductViewModel>()))
                .Returns(new List<string> { "QuantityNotGreaterThanZero" });
