@@ -115,7 +115,7 @@ namespace P3AddNewFunctionalityDotNetCore.Models.Services
             Product productEntity = new Product
             {
                 Name = product.Name,
-                Price = double.Parse(product.Price),
+                Price = double.Parse(product.Price, CultureInfo.InvariantCulture),
                 Quantity = Int32.Parse(product.Stock),
                 Description = product.Description,
                 Details = product.Details
@@ -125,12 +125,12 @@ namespace P3AddNewFunctionalityDotNetCore.Models.Services
 
         public void DeleteProduct(int id)
         {
-            // TODO what happens if a product has been added to a cart and has been later removed from the inventory ?
-            // delete the product form the cart by using the specific method
-            // => the choice is up to the student
-            _cart.RemoveLine(GetProductById(id));
+            if (_cart != null)
+            {
+                _cart.RemoveLine(GetProductById(id));
+            }
 
-            _productRepository.DeleteProduct(id);
+            _productRepository?.DeleteProduct(id);
         }
     }
 }

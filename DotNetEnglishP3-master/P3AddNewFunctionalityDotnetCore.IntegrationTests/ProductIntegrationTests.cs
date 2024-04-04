@@ -1,4 +1,6 @@
-﻿using Moq;
+﻿using Microsoft.Extensions.Localization;
+using Moq;
+using P3AddNewFunctionalityDotNetCore.Models;
 using P3AddNewFunctionalityDotNetCore.Models.Entities;
 using P3AddNewFunctionalityDotNetCore.Models.Repositories;
 using P3AddNewFunctionalityDotNetCore.Models.Services;
@@ -15,6 +17,9 @@ namespace P3AddNewFunctionalityDotNetCore.Integration.Tests
             // Arrange - Configuration initiale avec les repositories mockés et les services
             var mockProductRepository = new Mock<IProductRepository>();
             // Simuler des produits existants pour la configuration du test
+            var mockCart = new Mock<ICart>();
+            var mockOrderRepository = new Mock<IOrderRepository>();
+            var mockLocalizer = new Mock<IStringLocalizer<ProductService>>();
             var existingProducts = new List<Product>
             {
                 new Product { Id = 1, Name = "Existing Product 1", Price = 20.00, Quantity = 10 },
@@ -39,7 +44,8 @@ namespace P3AddNewFunctionalityDotNetCore.Integration.Tests
                                      if (productToRemove != null) existingProducts.Remove(productToRemove);
                                  });
 
-            var productService = new ProductService(null, mockProductRepository.Object, null, null);
+            var productService = new ProductService(mockCart.Object, mockProductRepository.Object, mockOrderRepository.Object, mockLocalizer.Object);
+
 
             // Act - L'admin ajoute un nouveau produit
             var newProductViewModel = new ProductViewModel
