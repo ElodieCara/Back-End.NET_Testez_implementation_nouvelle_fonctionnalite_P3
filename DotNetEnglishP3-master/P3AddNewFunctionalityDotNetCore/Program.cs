@@ -82,3 +82,6 @@ app.MapControllerRoute(
 await IdentitySeedData.EnsurePopulated(app);
 
 app.Run();
+
+// Cette ligne déclare `Program` comme une classe partielle publique après la configuration de l'application.
+public partial class Program { }
