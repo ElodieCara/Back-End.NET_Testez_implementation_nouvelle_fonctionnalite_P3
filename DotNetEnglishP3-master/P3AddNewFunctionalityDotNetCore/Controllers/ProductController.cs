@@ -51,6 +51,7 @@ namespace P3AddNewFunctionalityDotNetCore.Controllers
             }
         }
 
+       
         [Authorize]
         [HttpPost]
         public IActionResult DeleteProduct(int id)

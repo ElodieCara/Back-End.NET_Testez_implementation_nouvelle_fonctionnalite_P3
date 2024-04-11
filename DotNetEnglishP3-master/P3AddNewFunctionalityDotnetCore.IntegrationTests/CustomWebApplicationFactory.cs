@@ -1,20 +1,17 @@
-using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using P3AddNewFunctionalityDotNetCore.Data;
 
-public class CustomWebApplicationFactory : WebApplicationFactory<Program>
+public class CustomWebApplicationFactory<TStartup>
+    : WebApplicationFactory<TStartup> where TStartup : class
 {
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.ConfigureServices(services =>
         {
-            // Configuration de l'authentification fictive
-            services.AddAuthentication("TestScheme")
-                .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>("TestScheme", options => { });
-
-            // Supprimer la configuration de la base de données existante pour P3Referential
+            // Trouver le descripteur original du DbContext
             var descriptor = services.SingleOrDefault(
                 d => d.ServiceType == typeof(DbContextOptions<P3Referential>));
 
@@ -23,47 +20,19 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
                 services.Remove(descriptor);
             }
 
-            // Ajouter la base de données en mémoire pour les tests
+            // Ajouter le DbContext avec une configuration pour une base de données en mémoire
             services.AddDbContext<P3Referential>(options =>
             {
-                options.UseInMemoryDatabase("InMemoryAppDb");
+                options.UseInMemoryDatabase("InMemoryDbForTesting");
             });
 
+            // Assurer que la base de données est bien créée
+            var sp = services.BuildServiceProvider();
+            using (var scope = sp.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<P3Referential>();
+                db.Database.EnsureCreated();
+            }
         });
     }
 }
-
-
-
-
-
-
-//using Microsoft.AspNetCore.Authentication;
-//using Microsoft.AspNetCore.Mvc.Testing;
-//using Microsoft.EntityFrameworkCore;
-//using Microsoft.Extensions.DependencyInjection;
-//using P3AddNewFunctionalityDotNetCore.Data;
-
-//public class CustomWebApplicationFactory : WebApplicationFactory<Program>
-//{
-//    protected override void ConfigureWebHost(IWebHostBuilder builder)
-//    {
-//        builder.ConfigureServices(services =>
-//        {
-//            services.AddAuthentication("TestScheme")
-//                .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>("TestScheme", options => { });
-
-//            // Configurer la base de données en mémoire pour les tests
-//            var serviceProvider = new ServiceCollection()
-//                .AddEntityFrameworkInMemoryDatabase()
-//                .BuildServiceProvider();
-
-//            services.AddDbContext<P3Referential>(options =>
-//            {
-//                options.UseInMemoryDatabase("InMemoryAppDb");
-//                options.UseInternalServiceProvider(serviceProvider);
-//            });
-
-//        });
-//    }
-//}
