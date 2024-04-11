@@ -1,198 +1,121 @@
-﻿using Microsoft.AspNetCore.Mvc.Testing;
+﻿using System.Threading.Tasks;
+using Xunit;
+using Microsoft.EntityFrameworkCore;
+using P3AddNewFunctionalityDotNetCore.Data;
+using P3AddNewFunctionalityDotNetCore.Models.Entities;
+using Microsoft.Extensions.DependencyInjection;
 using P3AddNewFunctionalityDotNetCore.Models.ViewModels;
-using System.Net.Http.Headers;
-using System.Text;
-using System.Text.Json;
+using P3AddNewFunctionalityDotNetCore.Models.Services;
+using P3AddNewFunctionalityDotNetCore.Models.Repositories;
 
-
-public class ProductServiceIntegrationTest : IClassFixture<CustomWebApplicationFactory>
+public class ProductServiceCrudIntegrationTest : IClassFixture<CustomWebApplicationFactory<Program>>
 {
-    private readonly HttpClient _client;
+    private readonly CustomWebApplicationFactory<Program> _factory;
 
-    public ProductServiceIntegrationTest(CustomWebApplicationFactory factory)
+    public ProductServiceCrudIntegrationTest(CustomWebApplicationFactory<Program> factory)
     {
-        _client = factory.CreateClient(new WebApplicationFactoryClientOptions
+        _factory = factory;
+    }
+
+    [Fact]
+    public async Task CreateProduct_ShouldAddProductCorrectly()
+    {
+        // Arrange
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<P3Referential>();
+        dbContext.Database.EnsureDeleted();
+        dbContext.Database.EnsureCreated();
+
+        var productService = scope.ServiceProvider.GetRequiredService<IProductService>();
+        var newProductViewModel = new ProductViewModel
         {
-            AllowAutoRedirect = false,
+            Name = "New Product",
+            Description = "A new product",
+            Details = "Details of the new product",
+            Price = "29.99",
+            Stock = "100"
+        };
+
+        // Act
+        productService.SaveProduct(newProductViewModel);
+        await dbContext.SaveChangesAsync();
+
+        // Assert
+        var product = await dbContext.Product.FirstOrDefaultAsync(p => p.Name == "New Product");
+        Assert.NotNull(product);
+        Assert.Equal("A new product", product.Description);
+    }
+
+    [Fact]
+    public async Task UpdateProductStocks_ShouldUpdateProductQuantityCorrectly()
+    {
+        // Arrange
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<P3Referential>();
+        dbContext.Database.EnsureDeleted();
+        dbContext.Database.EnsureCreated();
+
+        // Ajoutez des produits avec des quantités initiales
+        SeedData.Initialize(scope.ServiceProvider, null);
+
+        // Act
+        var productService = scope.ServiceProvider.GetRequiredService<IProductService>();
+        var productRepository = scope.ServiceProvider.GetRequiredService<IProductRepository>();
+
+        // Modifiez la quantité du produit
+        productRepository.UpdateProductStocks(1, 5); // Retirez 5 de la quantité initiale
+        await dbContext.SaveChangesAsync(); // Sauvegardez les changements dans la base de données
+
+        // Assert
+        // Vérifiez si la quantité mise à jour est correcte côté client
+        var updatedProduct = await productService.GetProduct(1); // Récupérez le produit mis à jour
+        Assert.Equal(5, updatedProduct.Quantity); // La quantité mise à jour doit être 5
+    }
+
+    [Fact]
+    public async Task DeleteProduct_ShouldRemoveProductCorrectly()
+    {
+        // Arrange
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<P3Referential>();
+        dbContext.Database.EnsureDeleted();
+        dbContext.Database.EnsureCreated();
+
+        var product = new Product { Name = "Product To Delete", Price = 30.00, Quantity = 20 };
+        dbContext.Product.Add(product);
+        await dbContext.SaveChangesAsync();
+
+        // Act
+        dbContext.Product.Remove(product);
+        await dbContext.SaveChangesAsync();
+
+        // Assert
+        var deletedProduct = await dbContext.Product.FindAsync(product.Id);
+        Assert.Null(deletedProduct);
+    }
+
+    [Fact]
+    public async Task GetProducts_ShouldReturnAllProducts()
+    {
+        // Arrange
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<P3Referential>();
+        dbContext.Database.EnsureDeleted();
+        dbContext.Database.EnsureCreated();
+
+        dbContext.Product.AddRange(new Product[]
+        {
+            new Product { Name = "Product 1", Price = 10.00, Quantity = 100 },
+            new Product { Name = "Product 2", Price = 20.00, Quantity = 200 }
         });
+        await dbContext.SaveChangesAsync();
 
-        // Configurez le client pour utiliser le schéma d'authentification fictif
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("TestScheme");
-    
-}
+        // Act
+        var products = await dbContext.Product.ToListAsync();
 
-    [Fact]
-    public async Task AddProduct_ByAdmin_ShouldBeAvailableForClient()
-    {
-        
-        // Admin ajoute un nouveau produit
-        var newProduct = new { Name = "New Product", Price = 20.00, Quantity = 100 };
-        var addResponse = await _client.PostAsync("/Product/Create",
-            new StringContent(JsonSerializer.Serialize(newProduct), Encoding.UTF8, "application/json"));
-        addResponse.EnsureSuccessStatusCode();
-
-        // Client récupère la liste des produits pour vérifier la présence du nouveau produit
-        var listResponse = await _client.GetAsync("/Product");
-        listResponse.EnsureSuccessStatusCode();
-        var productList = await JsonSerializer.DeserializeAsync<List<ProductViewModel>>(await listResponse.Content.ReadAsStreamAsync()) ?? new List<ProductViewModel>();
-        Assert.Contains(productList, p => p.Name == newProduct.Name && p.Price == newProduct.Price.ToString() && p.Stock == newProduct.Quantity.ToString());
-
-        // Supplémentaire: Client ajoute le produit au panier et vérifie
-        // Cette partie dépend de l'implémentation spécifique de votre application
-    }
-
-    [Fact]
-    public async Task DeleteProduct_ByAdmin_ShouldNotBeAvailableForClient()
-    {
-       
-        // Supposons que le produit à supprimer a l'ID 1
-        var productIdToDelete = 1;
-
-        // Admin supprime le produit
-        var deleteResponse = await _client.DeleteAsync($"/Product/DeleteProduct?id={productIdToDelete}");
-        deleteResponse.EnsureSuccessStatusCode();
-
-        // Client vérifie que le produit n'est plus dans la liste
-        var listResponse = await _client.GetAsync("/Product");
-        listResponse.EnsureSuccessStatusCode();
-        var productList = await JsonSerializer.DeserializeAsync<List<ProductViewModel>>(await listResponse.Content.ReadAsStreamAsync()) ?? new List<ProductViewModel>();
-        Assert.DoesNotContain(productList, p => p.Id == productIdToDelete);
-
-        // Supplémentaire: Vérifier que le produit n'est plus dans le panier si il y était
-        // Cette partie dépend de l'implémentation spécifique de votre application
+        // Assert
+        Assert.Equal(2, products.Count);
+        Assert.Contains(products, p => p.Name == "Product 1");
+        Assert.Contains(products, p => p.Name == "Product 2");
     }
 }
-
-
-
-
-//using P3AddNewFunctionalityDotNetCore.Models.ViewModels;
-//using System.Text;
-//using System.Text.Json;
-
-
-//public class ProductServiceIntegrationTest : IClassFixture<CustomWebApplicationFactory>
-//{
-//    private readonly HttpClient _client;
-
-//    public ProductServiceIntegrationTest(CustomWebApplicationFactory factory)
-//    {
-//        _client = factory.CreateClient();
-//    }
-
-//    [Theory]
-//    [InlineData("New Product 1", 10.00, 5)]
-//    [InlineData("New Product 2", 20.00, 10)]
-//    public async Task AddProduct_ShouldReflectInProductList(string name, double price, int quantity)
-//    {
-//        // Arrange
-//        var newProductData = new StringContent(
-//            JsonSerializer.Serialize(new { Name = name, Price = price.ToString(), Stock = quantity.ToString() }),
-//            Encoding.UTF8,
-//            "application/json");
-
-//        // Act - Envoi de la requête POST pour ajouter un nouveau produit
-//        var postResponse = await _client.PostAsync("/admin/addProduct", newProductData);
-//        postResponse.EnsureSuccessStatusCode();
-
-//        // Act - Récupération de la liste des produits
-//        var getResponse = await _client.GetAsync("/products");
-//        getResponse.EnsureSuccessStatusCode();
-
-//        var productList = await JsonSerializer.DeserializeAsync<List<ProductViewModel>>(await getResponse.Content.ReadAsStreamAsync()) ?? new List<ProductViewModel>();
-
-//        // Assert - Vérifier que le nouveau produit est ajouté
-//        Assert.Contains(productList, p => p.Name == name &&
-//                                          decimal.Parse(p.Price) == (decimal)price &&
-//                                          int.Parse(p.Stock) == quantity);
-//    }
-
-//    [Fact]
-//    public async Task DeleteProduct_ShouldRemoveProductFromList()
-//    {
-//        // Arrange - Supposez que nous avons un produit avec l'ID 1 que nous voulons supprimer
-//        int productIdToDelete = 1;
-
-//        // Act - Envoi de la requête DELETE pour supprimer le produit
-//        var deleteResponse = await _client.DeleteAsync($"/admin/deleteProduct/{productIdToDelete}");
-//        deleteResponse.EnsureSuccessStatusCode();
-
-//        // Act - Récupération de la liste des produits pour vérifier la suppression
-//        var getResponse = await _client.GetAsync("/products");
-//        getResponse.EnsureSuccessStatusCode();
-//        var productList = await JsonSerializer.DeserializeAsync<List<ProductViewModel>>(await getResponse.Content.ReadAsStreamAsync()) ?? new List<ProductViewModel>();
-
-//        // Assert - Vérifier que le produit supprimé n'est plus présent
-//        Assert.DoesNotContain(productList, p => p.Id == productIdToDelete);
-//    }
-
-//    [Theory]
-//    [InlineData(1, "Updated Product", 15.00, 8)]
-//    public async Task UpdateProduct_ShouldReflectUpdatedProductDetails(int productIdToUpdate, string newName, double newPrice, int newQuantity)
-//    {
-//        // Arrange - Préparation des données mises à jour pour le produit
-//        var updatedProductData = new StringContent(
-//            JsonSerializer.Serialize(new { Id = productIdToUpdate, Name = newName, Price = newPrice.ToString(), Stock = newQuantity.ToString() }),
-//            Encoding.UTF8,
-//            "application/json");
-
-//        // Act - Envoi de la requête PUT/PATCH pour mettre à jour le produit
-//        var updateResponse = await _client.PutAsync($"/admin/updateProduct/{productIdToUpdate}", updatedProductData); // ou PatchAsync selon votre API
-//        updateResponse.EnsureSuccessStatusCode();
-
-//        // Act - Récupération de la liste des produits pour vérifier la mise à jour
-//        var getResponse = await _client.GetAsync("/products");
-//        getResponse.EnsureSuccessStatusCode();
-//        var productList = await JsonSerializer.DeserializeAsync<List<ProductViewModel>>(await getResponse.Content.ReadAsStreamAsync()) ?? new List<ProductViewModel>();
-
-//        // Assert - Vérifier que les détails du produit sont mis à jour
-//        Assert.Contains(productList, p => p.Id == productIdToUpdate && p.Name == newName && decimal.Parse(p.Price) == (decimal)newPrice && int.Parse(p.Stock) == newQuantity);
-//    }
-
-//}
-
-
-
-
-
-
-
-//using Microsoft.AspNetCore.Mvc.Testing;
-//using System.Text;
-//using System.Text.Json;
-
-
-//public class ProductServiceIntegrationTest : IClassFixture<Program>
-//{
-//    private readonly WebApplicationFactory<Program> _factory;
-
-//    public ProductServiceIntegrationTest(CustomWebApplicationFactory factory)
-//    {
-//        _factory = factory;
-//    }
-
-//    [Theory]
-//    [InlineData("New Product 1", 10.00, 5)]
-//    [InlineData("New Product 2", 20.00, 10)]
-//    public async Task AddProduct_ShouldReflectInProductList(string name, double price, int quantity)
-//    {
-//        // Arrange - Préparation de la requête d'ajout d'un nouveau produit
-//        var newProductData = new StringContent(
-//            JsonSerializer.Serialize(new { Name = name, Price = price, Quantity = quantity }),
-//            Encoding.UTF8,
-//            "application/json");
-
-//        // Act - Envoi de la requête d'ajout de produit
-//        await _factory.PostAsync("/admin/addProduct", newProductData);
-
-//        // Act - Récupération de la liste des produits pour vérifier l'ajout
-//        var response = await _factory.GetAsync("/products");
-//        response.EnsureSuccessStatusCode();
-
-//        // Assert - Vérification que le nouveau produit est bien présent dans la liste des produits récupérée
-//        var productList = await JsonSerializer.DeserializeAsync<List<P3AddNewFunctionalityDotNetCore.Models.ViewModels.ProductViewModel>>(await response.Content.ReadAsStreamAsync());
-//        Assert.Contains(productList, p => p.Name == name && p.Price == price && p.Quantity == quantity);
-//    }
-
-//    // Vous pouvez étendre les tests pour inclure la suppression, la mise à jour, etc., en suivant la même structure.
-//}
