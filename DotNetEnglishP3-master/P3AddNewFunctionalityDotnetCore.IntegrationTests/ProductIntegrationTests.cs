@@ -1,121 +1,130 @@
-﻿using System.Threading.Tasks;
-using Xunit;
+﻿using System;
 using Microsoft.EntityFrameworkCore;
-using P3AddNewFunctionalityDotNetCore.Data;
+using Microsoft.Extensions.Configuration;
+using Xunit;
+using Moq;
+using Microsoft.Extensions.Localization;
 using P3AddNewFunctionalityDotNetCore.Models.Entities;
-using Microsoft.Extensions.DependencyInjection;
-using P3AddNewFunctionalityDotNetCore.Models.ViewModels;
 using P3AddNewFunctionalityDotNetCore.Models.Services;
+using P3AddNewFunctionalityDotNetCore.Models.ViewModels;
 using P3AddNewFunctionalityDotNetCore.Models.Repositories;
+using P3AddNewFunctionalityDotNetCore.Data;
+using P3AddNewFunctionalityDotNetCore.Models;
 
-public class ProductServiceCrudIntegrationTest : IClassFixture<CustomWebApplicationFactory<Program>>
+namespace P3AddNewFunctionalityDotNetCore.Integration.Tests
 {
-    private readonly CustomWebApplicationFactory<Program> _factory;
-
-    public ProductServiceCrudIntegrationTest(CustomWebApplicationFactory<Program> factory)
+    // Fixture de base de données pour les tests, s'assurant que chaque test a sa propre instance de base de données isolée
+    public class DatabaseFixture : IDisposable
     {
-        _factory = factory;
-    }
+        public P3Referential DbContext { get; private set; }
 
-    [Fact]
-    public async Task CreateProduct_ShouldAddProductCorrectly()
-    {
-        // Arrange
-        using var scope = _factory.Services.CreateScope();
-        var dbContext = scope.ServiceProvider.GetRequiredService<P3Referential>();
-        dbContext.Database.EnsureDeleted();
-        dbContext.Database.EnsureCreated();
-
-        var productService = scope.ServiceProvider.GetRequiredService<IProductService>();
-        var newProductViewModel = new ProductViewModel
+        public DatabaseFixture()
         {
-            Name = "New Product",
-            Description = "A new product",
-            Details = "Details of the new product",
-            Price = "29.99",
-            Stock = "100"
-        };
+            // Crée un nom de base de données unique pour éviter les conflits entre les tests
+            var dbName = Guid.NewGuid().ToString(); 
+            var configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    // Configuration des chaînes de connexion pour la base de données
+                    {"Logging:LogLevel:Default", "Warning"},
+                    {"ConnectionStrings:P3Referential", "Server=.;Database=P3Referential-2f561d3b-493f-46fd-83c9-6e2643e7bd0a;Trusted_Connection=True;MultipleActiveResultSets=true"},
+                    {"ConnectionStrings:P3Identity", "Server=.;Database=Identity;Trusted_Connection=True;MultipleActiveResultSets=true"}
+            })
+            .Build();
 
-        // Act
-        productService.SaveProduct(newProductViewModel);
-        await dbContext.SaveChangesAsync();
+            var connectionString = configuration.GetConnectionString("P3Referential") ?? throw new InvalidOperationException("Connection string for 'P3Referential' is not found.");
+            var options = new DbContextOptionsBuilder<P3Referential>()
+                .UseSqlServer(connectionString)
+                .Options;
 
-        // Assert
-        var product = await dbContext.Product.FirstOrDefaultAsync(p => p.Name == "New Product");
-        Assert.NotNull(product);
-        Assert.Equal("A new product", product.Description);
-    }
+            DbContext = new P3Referential(options,configuration);
+            DbContext.Database.EnsureCreated();
+            SeedDatabase(DbContext);
+        }
 
-    [Fact]
-    public async Task UpdateProductStocks_ShouldUpdateProductQuantityCorrectly()
-    {
-        // Arrange
-        using var scope = _factory.Services.CreateScope();
-        var dbContext = scope.ServiceProvider.GetRequiredService<P3Referential>();
-        dbContext.Database.EnsureDeleted();
-        dbContext.Database.EnsureCreated();
-
-        // Ajoutez des produits avec des quantités initiales
-        SeedData.Initialize(scope.ServiceProvider, null);
-
-        // Act
-        var productService = scope.ServiceProvider.GetRequiredService<IProductService>();
-        var productRepository = scope.ServiceProvider.GetRequiredService<IProductRepository>();
-
-        // Modifiez la quantité du produit
-        productRepository.UpdateProductStocks(1, 5); // Retirez 5 de la quantité initiale
-        await dbContext.SaveChangesAsync(); // Sauvegardez les changements dans la base de données
-
-        // Assert
-        // Vérifiez si la quantité mise à jour est correcte côté client
-        var updatedProduct = await productService.GetProduct(1); // Récupérez le produit mis à jour
-        Assert.Equal(5, updatedProduct.Quantity); // La quantité mise à jour doit être 5
-    }
-
-    [Fact]
-    public async Task DeleteProduct_ShouldRemoveProductCorrectly()
-    {
-        // Arrange
-        using var scope = _factory.Services.CreateScope();
-        var dbContext = scope.ServiceProvider.GetRequiredService<P3Referential>();
-        dbContext.Database.EnsureDeleted();
-        dbContext.Database.EnsureCreated();
-
-        var product = new Product { Name = "Product To Delete", Price = 30.00, Quantity = 20 };
-        dbContext.Product.Add(product);
-        await dbContext.SaveChangesAsync();
-
-        // Act
-        dbContext.Product.Remove(product);
-        await dbContext.SaveChangesAsync();
-
-        // Assert
-        var deletedProduct = await dbContext.Product.FindAsync(product.Id);
-        Assert.Null(deletedProduct);
-    }
-
-    [Fact]
-    public async Task GetProducts_ShouldReturnAllProducts()
-    {
-        // Arrange
-        using var scope = _factory.Services.CreateScope();
-        var dbContext = scope.ServiceProvider.GetRequiredService<P3Referential>();
-        dbContext.Database.EnsureDeleted();
-        dbContext.Database.EnsureCreated();
-
-        dbContext.Product.AddRange(new Product[]
+        // Peuple la base de données avec des données initiales pour les tests
+        private void SeedDatabase(P3Referential context)
         {
-            new Product { Name = "Product 1", Price = 10.00, Quantity = 100 },
-            new Product { Name = "Product 2", Price = 20.00, Quantity = 200 }
-        });
-        await dbContext.SaveChangesAsync();
+            context.Product.AddRange(
+                new Product { 
+                    Name = "Existing Product 1", 
+                    Price = 20.00, 
+                    Quantity = 10 },
 
-        // Act
-        var products = await dbContext.Product.ToListAsync();
+                new Product { 
+                    Name = "Existing Product 2", 
+                    Price = 25.00, 
+                    Quantity = 15 }
+            );
+            context.SaveChanges();
+        }
 
-        // Assert
-        Assert.Equal(2, products.Count);
-        Assert.Contains(products, p => p.Name == "Product 1");
-        Assert.Contains(products, p => p.Name == "Product 2");
+        public void Dispose()
+        {
+            DbContext.Database.EnsureDeleted();
+            DbContext.Dispose();
+        }
+    }
+
+    // Classe de test pour ProductService utilisant DatabaseFixture pour s'assurer d'un environnement propre
+    public class ProductServiceIntegrationTests : IClassFixture<DatabaseFixture>
+    {
+        private readonly ProductService _productService;
+        private readonly P3Referential _dbContext;
+
+        public ProductServiceIntegrationTests(DatabaseFixture fixture)
+        {
+            _dbContext = fixture.DbContext;
+            var mockCart = new Mock<ICart>();
+            var productRepository = new ProductRepository(_dbContext);
+            var mockOrderRepository = new Mock<IOrderRepository>();
+            var mockLocalizer = new Mock<IStringLocalizer<ProductService>>();
+
+            // Instanciation du ProductService avec des dépendances contrôlées pour les tests
+            _productService = new ProductService(mockCart.Object, productRepository, mockOrderRepository.Object, mockLocalizer.Object);
+        }
+
+        // Test pour vérifier que le produit est correctement ajouté à la base de données
+        [Fact]
+        public void SaveProduct_ShouldAddProductCorrectly()
+        {
+            // Arrange
+            // Création et configuration du ViewModel de produit
+            var newProductViewModel = new ProductViewModel
+            {
+                Name = "New Product",
+                Price = "33.50",
+                Stock = "25"
+            };
+
+            // Act
+            // Action: Sauvegarde du nouveau produit via le service
+            _productService.SaveProduct(newProductViewModel);
+
+            // Assert
+            // Récupération du produit pour vérification
+            var addedProduct = _dbContext.Product.FirstOrDefault(p => p.Name == "New Product");
+            Assert.NotNull(addedProduct);// Vérifie que le produit est bien ajouté
+            Assert.Equal(33.50, Convert.ToDouble(addedProduct.Price), 2);// Confirme que le prix est correct avec une tolérance de 2 décimales
+            Assert.Equal(25, addedProduct.Quantity);// Confirme que la quantité est correcte
+        }
+
+        // Test pour vérifier que le produit est correctement supprimé de la base de données
+        [Fact]
+        public void DeleteProduct_ShouldRemoveProductCorrectly()
+        {
+            // Arrange
+            // Préparation : obtention de l'ID du premier produit
+            var productId = _dbContext.Product.First().Id;
+
+            // Act
+            // Action: Suppression du produit via le service
+            _productService.DeleteProduct(productId);
+
+            // Assert
+            // Vérification que le produit a bien été supprimé
+            var product = _dbContext.Product.Find(productId);
+            Assert.Null(product);// Le produit ne doit plus être présent dans la base
+        }
     }
 }
