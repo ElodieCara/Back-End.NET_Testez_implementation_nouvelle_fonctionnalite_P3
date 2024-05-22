@@ -50,8 +50,7 @@ namespace P3AddNewFunctionalityDotNetCore.Controllers
                 return View(product);
             }
         }
-
-       
+               
         [Authorize]
         [HttpPost]
         public IActionResult DeleteProduct(int id)
