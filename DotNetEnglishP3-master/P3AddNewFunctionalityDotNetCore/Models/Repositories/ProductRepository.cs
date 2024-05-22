@@ -62,9 +62,7 @@ namespace P3AddNewFunctionalityDotNetCore.Models.Repositories
                 _context.SaveChanges();
             }
         }
-
-  
-
+          
         public void DeleteProduct(int id)
         {
             Product product = _context.Product.First(p => p.Id == id);
